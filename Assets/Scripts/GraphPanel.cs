@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace Prisms.Assignment {
-    public class GraphPanel : MonoBehaviour
+    public class GraphPanel : UIPanel
     {
         public GraphController controller;
         public Transform nodeContainer;
@@ -15,54 +15,67 @@ namespace Prisms.Assignment {
         int _maxVal = -1;
         public int MaxVal { get { return _maxVal; } }
 
-        private void Awake()
+        protected override void OpenPanel()
         {
+            base.OpenPanel();
             InitializePanel();
         }
-        public void InitializePanel() 
+
+        public virtual void InitializePanel() 
         {
             if (controller == null) return;
-            RefreshLimits();
-            InstantiateNodes();
+
+            GraphDataModel.GraphDataElement[] transformedData = GetTransformedDataModel();
+
+            RefreshLimits(transformedData);
+            InstantiateNodes(transformedData);
         }
-        public void ResetPanel() 
+
+        protected virtual GraphDataModel.GraphDataElement[] GetTransformedDataModel() 
         {
+            return controller.graphDataModel.data;
+        }
+
+        public virtual void ResetPanel() 
+        {
+            Debug.Log("Reset pressed.");
             foreach(int nodeIndex in _layoutNodes.Keys) 
             {
                 _layoutNodes[nodeIndex].transform.SetSiblingIndex(nodeIndex);
             }
         }
-
-        void RefreshLimits() 
+        protected virtual void RefreshLimits(GraphDataModel.GraphDataElement[] inData) 
         {
-            for (int i = 0; i < controller.graphDataModel.data.Length; i++)
+            for (int i = 0; i < inData.Length; i++)
             {
-                if(controller.graphDataModel.data[i].value > _maxVal) 
+                if(inData[i].value > _maxVal) 
                 {
-                    _maxVal = controller.graphDataModel.data[i].value;
+                    _maxVal = inData[i].value;
                 }
             }
         }
 
-        void InstantiateNodes() 
+        protected virtual void InstantiateNodes(GraphDataModel.GraphDataElement[] inData) 
         {
-            //TODO: probably would want to deal with old layoutnodes if we actually saw any
-            _layoutNodes.Clear();
-
-            for(int i = 0; i < controller.graphDataModel.data.Length; i++) 
+            if (_layoutNodes.Count > 0)
+            {
+                ResetPanel();
+                return;
+            }
+            for(int i = 0; i < inData.Length; i++) 
             {
                 GameObject inst = Instantiate(nodePrefab, nodeContainer);
-                inst.name = string.Format("Node_{0}_{1}", controller.graphDataModel.data[i].index, controller.graphDataModel.data[i].value);
+                inst.name = string.Format("Node_{0}_{1}", inData[i].index, inData[i].value);
                 LayoutNode layoutInst = inst.GetComponent<LayoutNode>();
                 if (layoutInst)
                 {
-                    layoutInst.AssignData(this, controller.graphDataModel.data[i]);
+                    layoutInst.AssignData(this, inData[i]);
                     _layoutNodes.Add(i,layoutInst);
                 }
             }
         }
 
-        public void SetPlaceholderNode(bool isActive, LayoutNode node) 
+        public virtual void SetPlaceholderNode(bool isActive, LayoutNode node) 
         {
             if(isActive)
                 placeholderNode.transform.SetSiblingIndex(node.transform.GetSiblingIndex());
@@ -71,7 +84,7 @@ namespace Prisms.Assignment {
             placeholderNode.SetActive(isActive);
         }
 
-        public void ReportNodeDrag(LayoutNode node) 
+        public virtual void ReportNodeDrag(LayoutNode node) 
         {
             int targetIndex = GetKeyForLayoutNode(node);
             if(targetIndex != -1) 
@@ -85,7 +98,7 @@ namespace Prisms.Assignment {
             }
             else { Debug.Log("Invalid Node Value."); }
         }
-        int GetKeyForLayoutNode(LayoutNode node) 
+        protected virtual int GetKeyForLayoutNode(LayoutNode node) 
         {
             foreach (int i in _layoutNodes.Keys)
             {
@@ -94,7 +107,7 @@ namespace Prisms.Assignment {
             }
             return -1;
         }
-        LayoutNode GetClosestNodeToBar(LayoutNode node)
+        protected virtual LayoutNode GetClosestNodeToBar(LayoutNode node)
         {
             int placeholderSiblingIndex = placeholderNode.transform.GetSiblingIndex();
 
@@ -115,7 +128,7 @@ namespace Prisms.Assignment {
                         {
                             closestDistance = currDistance;
                             closestSiblingIndex = currSiblingIndex;
-                            Debug.Log("Closest Sibling is " + currSiblingIndex);
+    
                         }
                     }
                 }
@@ -127,8 +140,9 @@ namespace Prisms.Assignment {
                 return placeholderNode.transform.parent.GetChild(closestSiblingIndex).GetComponent<LayoutNode>();
 
         }
-        bool ShiftBars(LayoutNode from, LayoutNode to) 
+        protected virtual bool ShiftBars(LayoutNode from, LayoutNode to) 
         {
+            to.InitShift(); //Decouple NodeBar
             placeholderNode.transform.SetSiblingIndex(to.transform.GetSiblingIndex());
             return true;
         }

@@ -45,5 +45,32 @@ namespace Prisms.Assignment
             this.raycastTarget = true;
             _panel.SetPlaceholderNode(false,this);
         }
+
+        Coroutine _shiftRoutine;
+        public void InitShift() 
+        {
+            if (_shiftRoutine != null)
+                StopCoroutine(_shiftRoutine);
+
+            nodeBar.transform.SetParent(_panel.transform, true);
+            _shiftRoutine = StartCoroutine(  ShiftRoutine(this.transform.GetSiblingIndex()) );
+        }
+        IEnumerator ShiftRoutine(int startSiblingIndex) 
+        {
+            while (startSiblingIndex == this.transform.GetSiblingIndex()) yield return new WaitForEndOfFrame();
+            nodeBar.transform.SetParent(this.transform, true);
+            float progress = 0f;
+            Vector3 startWorldPos = nodeBar.transform.position;
+            float snapSpeed = 5f;
+
+            while (progress < 1f) 
+            {
+                progress+= Time.deltaTime*snapSpeed;
+                nodeBar.transform.position = Vector3.Lerp(startWorldPos, this.transform.position, progress);
+                yield return new WaitForEndOfFrame();
+            }
+            nodeBar.transform.localPosition = Vector3.zero;
+            _shiftRoutine = null;
+        }
     }
 }
