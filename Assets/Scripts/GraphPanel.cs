@@ -8,6 +8,9 @@ namespace Prisms.Assignment {
         public GraphController controller;
         public Transform nodeContainer;
         public GameObject nodePrefab;
+        
+        public GameObject placeholderNode;
+        Dictionary<int, LayoutNode> _layoutNodes = new Dictionary<int, LayoutNode>();
 
         int _maxVal = -1;
         public int MaxVal { get { return _maxVal; } }
@@ -22,6 +25,14 @@ namespace Prisms.Assignment {
             RefreshLimits();
             InstantiateNodes();
         }
+        public void ResetPanel() 
+        {
+            foreach(int nodeIndex in _layoutNodes.Keys) 
+            {
+                _layoutNodes[nodeIndex].transform.SetSiblingIndex(nodeIndex);
+            }
+        }
+
         void RefreshLimits() 
         {
             for (int i = 0; i < controller.graphDataModel.data.Length; i++)
@@ -33,7 +44,6 @@ namespace Prisms.Assignment {
             }
         }
 
-        Dictionary<int,LayoutNode> _layoutNodes = new Dictionary<int,LayoutNode>();
         void InstantiateNodes() 
         {
             //TODO: probably would want to deal with old layoutnodes if we actually saw any
@@ -42,7 +52,7 @@ namespace Prisms.Assignment {
             for(int i = 0; i < controller.graphDataModel.data.Length; i++) 
             {
                 GameObject inst = Instantiate(nodePrefab, nodeContainer);
-                inst.name = string.Format("Node_{0}", i);
+                inst.name = string.Format("Node_{0}_{1}", controller.graphDataModel.data[i].index, controller.graphDataModel.data[i].value);
                 LayoutNode layoutInst = inst.GetComponent<LayoutNode>();
                 if (layoutInst)
                 {
@@ -52,12 +62,21 @@ namespace Prisms.Assignment {
             }
         }
 
+        public void SetPlaceholderNode(bool isActive, LayoutNode node) 
+        {
+            if(isActive)
+                placeholderNode.transform.SetSiblingIndex(node.transform.GetSiblingIndex());
+            else 
+                node.transform.SetSiblingIndex(placeholderNode.transform.GetSiblingIndex());
+            placeholderNode.SetActive(isActive);
+        }
+
         public void ReportNodeDrag(LayoutNode node) 
         {
             int targetIndex = GetKeyForLayoutNode(node);
             if(targetIndex != -1) 
             {
-                LayoutNode closestNode = GetClosestNodeToBar(targetIndex, node.nodeBar);
+                LayoutNode closestNode = GetClosestNodeToBar(node);
                 if(closestNode != node) 
                 {
                     Debug.Log("Should shift to: " + closestNode.gameObject.name);
@@ -75,57 +94,42 @@ namespace Prisms.Assignment {
             }
             return -1;
         }
-        LayoutNode GetClosestNodeToBar(int nodeIndex, NodeBarView nodeBarView) 
+        LayoutNode GetClosestNodeToBar(LayoutNode node)
         {
-            int closestIndex = nodeIndex;
-            float closestDistance = Vector3.Distance(nodeBarView.transform.position, _layoutNodes[closestIndex].transform.position);
-            int indexOffset = (nodeIndex) - _layoutNodes[nodeIndex].transform.GetSiblingIndex(); //Sibling index shifts as objects slide around
-            /*
-            for(int i = -1; i <= 1; i++) 
+            int placeholderSiblingIndex = placeholderNode.transform.GetSiblingIndex();
+
+            int closestSiblingIndex = -1;
+            float closestDistance = -1f;
+
+            for (int i = -2; i <= 2; i++) //placeholder placed at a spot between curr node and left/right, so we can't rely on +/-1; probably a cuter way to do this
             {
-                if(nodeIndex + i + indexOffset >= 0 && nodeIndex + i + indexOffset < _layoutNodes.Count) 
-                {
-                    float testDistance = Vector3.Distance(nodeBarView.transform.position, _layoutNodes[nodeIndex + i + indexOffset].transform.position);
-                    if(testDistance < closestDistance) 
+                int currSiblingIndex = placeholderSiblingIndex + i;
+                
+                if(currSiblingIndex >= 0 && currSiblingIndex < placeholderNode.transform.parent.childCount) 
+                { 
+                    Transform currNode = placeholderNode.transform.parent.GetChild(currSiblingIndex);
+                    if (currNode != node.transform)
                     {
-                        closestIndex = (nodeIndex + i + indexOffset);
+                        float currDistance = Vector3.Distance(node.transform.position, currNode.transform.position);
+                        if (currDistance < closestDistance || closestSiblingIndex == -1)
+                        {
+                            closestDistance = currDistance;
+                            closestSiblingIndex = currSiblingIndex;
+                            Debug.Log("Closest Sibling is " + currSiblingIndex);
+                        }
                     }
                 }
             }
-            */
 
-            foreach(int i in _layoutNodes.Keys) 
-            {
-                float testDistance = Vector3.Distance(nodeBarView.transform.position, _layoutNodes[i].transform.position);
-                if (testDistance < closestDistance)
-                {
-                    closestIndex = i;
-                }
+            if (closestSiblingIndex == placeholderSiblingIndex)
+                return node;
+            else
+                return placeholderNode.transform.parent.GetChild(closestSiblingIndex).GetComponent<LayoutNode>();
 
-            }
-
-            return _layoutNodes[closestIndex];
         }
         bool ShiftBars(LayoutNode from, LayoutNode to) 
         {
-            int fromIndex = GetKeyForLayoutNode(from);
-            int toIndex = GetKeyForLayoutNode(to);
-
-            int fromSibling = from.transform.GetSiblingIndex();
-            int toSibling = to.transform.GetSiblingIndex();
-            from.transform.SetSiblingIndex(toSibling);
-
-            return true;
-        }
-        bool SwapNodeBars(LayoutNode from, LayoutNode to) 
-        {
-
-            /*
-            var fromBar = from.nodeBar;
-            var toBar = to.nodeBar;
-            from.nodeBar = toBar;
-            to.nodeBar = fromBar;
-            */
+            placeholderNode.transform.SetSiblingIndex(to.transform.GetSiblingIndex());
             return true;
         }
     }

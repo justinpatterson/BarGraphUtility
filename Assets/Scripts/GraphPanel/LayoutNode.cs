@@ -21,8 +21,8 @@ namespace Prisms.Assignment
         public void Click(Vector3 ScreenPos)
         {
             this.raycastTarget = false;
-            //nodeLayout.ignoreLayout = true;
-
+            nodeLayout.ignoreLayout = true;
+            _panel.SetPlaceholderNode(true,this);
 
         }
 
@@ -32,17 +32,18 @@ namespace Prisms.Assignment
             //Vector3 localPos = nodeBar.transform.InverseTransformPoint(WorldPos);
             //nodeBar.transform.localPosition = localPos;
             
-            nodeBar.transform.position = WorldPos;
-            nodeBar.transform.localPosition = new Vector3(nodeBar.transform.localPosition.x, 0f, nodeBar.transform.localPosition.z); //this is more consistent
+            transform.position = WorldPos;
+            transform.localPosition = new Vector3(transform.localPosition.x, 0f, transform.localPosition.z); //this is more consistent
             
             _panel.ReportNodeDrag(this);
         }
 
         public void Release(Vector3 ScreenPos)
         {
-            nodeBar.transform.localPosition = Vector3.zero;
-            //nodeLayout.ignoreLayout = false;
+            //nodeBar.transform.localPosition = Vector3.zero;
+            nodeLayout.ignoreLayout = false;
             this.raycastTarget = true;
+            _panel.SetPlaceholderNode(false,this);
         }
     }
 }
