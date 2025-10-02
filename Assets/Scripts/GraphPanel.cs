@@ -52,13 +52,18 @@ namespace Prisms.Assignment {
             return controller.graphDataModel.data;
         }
 
-        public virtual void ResetPanel() 
+        public virtual void ResetPanel(bool force = true) 
         {
-            Debug.Log("Reset pressed.");
-            foreach(int nodeIndex in _layoutNodes.Keys) 
+            if (force)
             {
-                _layoutNodes[nodeIndex].transform.SetSiblingIndex(nodeIndex);
+                foreach (int nodeIndex in _layoutNodes.Keys)
+                {
+                    _layoutNodes[nodeIndex].transform.SetSiblingIndex(nodeIndex);
+                }
             }
+            else
+                ShiftBarSeries(_layoutNodes.Values.ToList());
+
         }
 
 
