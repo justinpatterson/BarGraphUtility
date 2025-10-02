@@ -32,7 +32,6 @@ namespace Prisms.Assignment {
 
             if (isActive && _isActive)
             {
-                Debug.Log("Handler triggered.");
                 GraphModeHandler();
             }
         }
@@ -68,7 +67,7 @@ namespace Prisms.Assignment {
             switch (controller.graphMode)
             {
                 case GraphController.GraphModes.Standard:
-                    if (Time.time < 1f) //basically a do-once;  I'm hitting a classic Canvas edge case Quirk if it tries to slide things around on start due to auto sizing settings
+                    if (Time.unscaledTime < 1f) //basically a do-once; I'm hitting a classic Canvas edge case quirk if I do things too fast at startup, due to auto size behaviors 
                     {
                         ResetPanel();
                     }
@@ -81,12 +80,7 @@ namespace Prisms.Assignment {
                 case GraphController.GraphModes.Median:
                     //if median, reorder in ascending
                     List<LayoutNode> sorted = _layoutNodes.Values.OrderBy(s => s.nodeBar.dataElement.value).ToList();
-                    for (int i = 0; i < sorted.Count; i++)
-                    {
-                        Debug.Log("Val " + i + " is " + sorted[i].nodeBar.dataElement.value);
-                    }
                     ShiftBarSeries(sorted);
-                    //then activate a subpanel or something neat to point at the middle
                     break;
                 case GraphController.GraphModes.Mean:
                     break;

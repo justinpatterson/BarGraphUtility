@@ -27,7 +27,6 @@ namespace Prisms.Assignment
         protected virtual void OpenPanel() 
         {
             _isActive = true;
-            Debug.Log("Opening " + this.gameObject.name);
             if (canvasGroup!= null)
             {
                 canvasGroup.interactable = true;

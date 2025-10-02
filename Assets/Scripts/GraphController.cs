@@ -97,12 +97,10 @@ namespace Prisms.Assignment
 
             if (count % 2 == 0)
             {
-                // Even number of elements, take the average of the two middle elements
                 return (sorted[middleIndex - 1].value + sorted[middleIndex].value) / 2.0f;
             }
             else
             {
-                // Odd number of elements, take the middle element
                 return sorted[middleIndex].value;
             }
         }
