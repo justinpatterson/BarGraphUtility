@@ -57,7 +57,8 @@ namespace Prisms.Assignment
         }
         IEnumerator ShiftRoutine(int startSiblingIndex) 
         {
-            while (startSiblingIndex == this.transform.GetSiblingIndex()) yield return new WaitForEndOfFrame();
+            float timeOut = Time.unscaledTime + 0.5f; 
+            while (startSiblingIndex == this.transform.GetSiblingIndex() && (Time.unscaledTime < timeOut)) yield return new WaitForEndOfFrame();
             nodeBar.transform.SetParent(this.transform, true);
             float progress = 0f;
             Vector3 startWorldPos = nodeBar.transform.position;

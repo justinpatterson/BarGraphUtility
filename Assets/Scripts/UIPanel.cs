@@ -2,16 +2,20 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-
+using UnityEngine.Events;
 namespace Prisms.Assignment
 {
     public class UIPanel : MonoBehaviour
     {
-        bool _isActive = false;
+        protected bool _isActive = false;
         public bool IsActive { get { return _isActive; } }
         public CanvasGroup canvasGroup;
+        public UnityEvent OpenEvent;
+        public UnityEvent CloseEvent;
 
-        public void SetPanelActivity(bool isActive, bool force = false) 
+
+
+        public virtual void SetPanelActivity(bool isActive, bool force = false) 
         {
             if (_isActive == isActive && !force) return;
 
@@ -30,7 +34,7 @@ namespace Prisms.Assignment
                 canvasGroup.alpha = 1;
                 canvasGroup.blocksRaycasts = true;
             }
-
+            OpenEvent?.Invoke();
         }
         protected virtual void ClosePanel() 
         {
@@ -41,6 +45,7 @@ namespace Prisms.Assignment
                 canvasGroup.alpha = 0;
                 canvasGroup.blocksRaycasts = false;
             }
+            CloseEvent?.Invoke();
         }
     }
 }

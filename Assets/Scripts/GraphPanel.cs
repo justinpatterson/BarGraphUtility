@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Prisms.Assignment {
@@ -15,12 +16,26 @@ namespace Prisms.Assignment {
         int _maxVal = -1;
         public int MaxVal { get { return _maxVal; } }
 
+        [System.Serializable]
+        public struct GraphSubPanel { public GraphController.GraphModes mode; public UIPanel panel; }
+        public GraphSubPanel[] subpanels;
+
         protected override void OpenPanel()
         {
             base.OpenPanel();
             InitializePanel();
         }
+        public override void SetPanelActivity(bool isActive, bool force = false)
+        {
+            
+            base.SetPanelActivity(isActive, force);
 
+            if (isActive && _isActive)
+            {
+                Debug.Log("Handler triggered.");
+                GraphModeHandler();
+            }
+        }
         public virtual void InitializePanel() 
         {
             if (controller == null) return;
@@ -29,6 +44,8 @@ namespace Prisms.Assignment {
 
             RefreshLimits(transformedData);
             InstantiateNodes(transformedData);
+            
+            //GraphModeHandler();
         }
 
         protected virtual GraphDataModel.GraphDataElement[] GetTransformedDataModel() 
@@ -44,6 +61,47 @@ namespace Prisms.Assignment {
                 _layoutNodes[nodeIndex].transform.SetSiblingIndex(nodeIndex);
             }
         }
+
+
+        protected virtual void GraphModeHandler() 
+        {
+            switch (controller.graphMode)
+            {
+                case GraphController.GraphModes.Standard:
+                    if (Time.time < 1f) //basically a do-once;  I'm hitting a classic Canvas edge case Quirk if it tries to slide things around on start due to auto sizing settings
+                    {
+                        ResetPanel();
+                    }
+                    else
+                        ShiftBarSeries(_layoutNodes.Values.ToList());
+                    break;
+                case GraphController.GraphModes.Mode:
+                    //I have a separate panel for this -- see GraphPanel_MODE
+                    break;
+                case GraphController.GraphModes.Median:
+                    //if median, reorder in ascending
+                    List<LayoutNode> sorted = _layoutNodes.Values.OrderBy(s => s.nodeBar.dataElement.value).ToList();
+                    for (int i = 0; i < sorted.Count; i++)
+                    {
+                        Debug.Log("Val " + i + " is " + sorted[i].nodeBar.dataElement.value);
+                    }
+                    ShiftBarSeries(sorted);
+                    //then activate a subpanel or something neat to point at the middle
+                    break;
+                case GraphController.GraphModes.Mean:
+                    break;
+                default:
+                    //otherwise, don't change behavior
+                    break;
+            }
+
+            foreach(GraphSubPanel gsp in subpanels) 
+            {
+                Debug.Log("Activate " + gsp.panel.name + "? " + (controller.graphMode == gsp.mode).ToString());
+                gsp.panel.SetPanelActivity(controller.graphMode == gsp.mode, true);
+            }
+        }
+
         protected virtual void RefreshLimits(GraphDataModel.GraphDataElement[] inData) 
         {
             for (int i = 0; i < inData.Length; i++)
@@ -54,7 +112,6 @@ namespace Prisms.Assignment {
                 }
             }
         }
-
         protected virtual void InstantiateNodes(GraphDataModel.GraphDataElement[] inData) 
         {
             if (_layoutNodes.Count > 0)
@@ -144,6 +201,18 @@ namespace Prisms.Assignment {
         {
             to.InitShift(); //Decouple NodeBar
             placeholderNode.transform.SetSiblingIndex(to.transform.GetSiblingIndex());
+            return true;
+        }
+
+        protected virtual bool ShiftBarSeries(List<LayoutNode> orderedNodes)
+        {
+            for (int i = 0; i < orderedNodes.Count; i++)
+            {
+                orderedNodes[i].InitShift();
+            }
+            for (int i = 0; i < orderedNodes.Count; i++)
+                orderedNodes[i].transform.SetSiblingIndex(i);
+
             return true;
         }
     }
